@@ -1,0 +1,31 @@
+services:
+  # ── Production mode (FE embedded) ─────────────────────────────────────────
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./credentials:/app/credentials
+      - ./.env:/app/.env
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ── Debug mod ──────────────────────────────────────────────
+  api-debug:
+    build: .
+    command: python -m debugpy --listen 0.0.0.0:5678 -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+      - "5678:5678"
+    volumes:
+      - .:/app
+      - ./credentials:/app/credentials
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    profiles:
+      - debug # ← chỉ chạy khi: docker compose --profile debug up
