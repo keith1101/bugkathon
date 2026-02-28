@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+*.egg-info/
+
+# Dev & Test
+.pytest_cache/
+tests/
+.coverage
+htmlcov/
+
+# Credentials (mount lúc runtime, không bake vào image)
+credentials/
+.env
+
+# Git
+.git/
+.gitignore
+
+# VS Code
+.vscode/
+
+# Docs
+*.md
+*.sql

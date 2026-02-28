@@ -1,0 +1,6 @@
+{
+    // Bật đọc file copilot-instructions.md
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+
+    "python-envs.defaultEnvManager": "ms-python.python:system"
+}
