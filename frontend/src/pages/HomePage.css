@@ -1,0 +1,66 @@
+.home-page {
+    min-height: calc(100vh - 99px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Logo section (white bg) */
+.home-logo-section {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 40px 0 0;
+    background: var(--white);
+}
+
+.home-logo-icon {
+    width: 116px;
+    height: 116px;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Hero section */
+.home-hero {
+    width: 100%;
+    background: var(--hero-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 64px 24px 80px;
+    flex: 1;
+}
+
+.home-title {
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+}
+
+.home-subtitle {
+    font-size: 17px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-bottom: 36px;
+}
+
+.home-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.home-actions .btn {
+    padding: 10px 28px;
+    font-size: 14px;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 42px;
+}
