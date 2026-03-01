@@ -42,7 +42,6 @@ CREATE TABLE generation_log (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     template_id UNIQUEIDENTIFIER NOT NULL,
     google_sheet_url NVARCHAR(MAX) NOT NULL,
-    drive_folder_id VARCHAR(255) NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING', -- PENDING, PROCESSING, COMPLETED, FAILED
     total_records INT NOT NULL DEFAULT 0,
     processed INT NOT NULL DEFAULT 0,
@@ -58,7 +57,6 @@ CREATE TABLE generated_assets (
     generation_log_id UNIQUEIDENTIFIER NOT NULL,
     participant_name NVARCHAR(255) NOT NULL,
     participant_email VARCHAR(255) NOT NULL,
-    drive_file_id VARCHAR(255) NULL,
     email_status VARCHAR(50) NOT NULL DEFAULT 'PENDING', -- PENDING, SENT, FAILED
     created_at DATETIME DEFAULT GETDATE(),
     CONSTRAINT FK_GeneratedAssets_GenerationLog FOREIGN KEY (generation_log_id) REFERENCES generation_log(id) ON DELETE CASCADE
@@ -185,6 +183,33 @@ VALUES
 GO
 
 -- ============================================================
+-- SEED: generation_log (Log demo)
+-- ============================================================
+
+INSERT INTO generation_log (
+    id,
+    template_id,
+    google_sheet_url,
+    status,
+    total_records,
+    processed,
+    created_at,
+    updated_at
+)
+VALUES
+    (
+        'e5000000-0000-0000-0000-000000000001',
+        'c3000000-0000-0000-0000-000000000002', -- template Bugkathon
+        'https://docs.google.com/spreadsheets/d/demo/edit',
+        'COMPLETED',
+        2,
+        2,
+        GETDATE(),
+        GETDATE()
+    );
+GO
+
+-- ============================================================
 -- SEED: generated_assets (Assets demo cho Bugkathon 2026)
 -- ============================================================
 
@@ -193,26 +218,23 @@ INSERT INTO generated_assets (
     generation_log_id,
     participant_name,
     participant_email,
-    drive_file_id,
     email_status,
     created_at
 )
 VALUES
     (
         'd4000000-0000-0000-0000-000000000001',
-        'c3000000-0000-0000-0000-000000000002', -- template Bugkathon
+        'e5000000-0000-0000-0000-000000000001', -- generation_log
         N'Nguyễn Văn A',
         'vana@example.com',
-        'drive_file_id_001',
         'SENT',
         GETDATE()
     ),
     (
         'd4000000-0000-0000-0000-000000000002',
-        'c3000000-0000-0000-0000-000000000002',
+        'e5000000-0000-0000-0000-000000000001', -- generation_log
         N'Trần Thị B',
         'thib@example.com',
-        'drive_file_id_002',
         'PENDING',
         GETDATE()
     );

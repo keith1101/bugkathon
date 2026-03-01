@@ -463,13 +463,13 @@ const GeneratorPage = () => {
                                     <input type="checkbox" checked={execOptions.pdf} onChange={e => setExecOptions({ ...execOptions, pdf: e.target.checked })} />
                                     <span style={{ color: '#EA4335' }}>📄</span> Create PDF Archive
                                 </label>
-                                <label className="exec-opt" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                {/* <label className="exec-opt" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                     <input type="checkbox" checked={execOptions.drive} onChange={e => setExecOptions({ ...execOptions, drive: e.target.checked })} />
-                                    <span style={{ color: '#FBBC04' }}>🗂️</span> Save to Drive <span style={{ fontSize: '10px', color: '#9CA3AF' }}>(Mock)</span>
-                                </label>
+                                    <span style={{ color: '#FBBC04' }}>🗂️</span> Save to Drive <span style={{ fontSize: '10px', color: '#9CA3AF' }}></span>
+                                </label> */}
                                 <label className="exec-opt" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                     <input type="checkbox" checked={execOptions.email} onChange={e => setExecOptions({ ...execOptions, email: e.target.checked })} />
-                                    <span style={{ color: '#34A853' }}>✉️</span> Send Email <span style={{ fontSize: '10px', color: '#9CA3AF' }}>(Mock)</span>
+                                    <span style={{ color: '#34A853' }}>✉️</span> Send Email <span style={{ fontSize: '10px', color: '#9CA3AF' }}></span>
                                 </label>
                             </div>
 
