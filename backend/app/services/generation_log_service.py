@@ -12,7 +12,6 @@ from app.repositories.generation_log_repository import GenerationLogRepository
 from app.repositories.template_repository import TemplateRepository
 from app.schemas.generation_log import GenerationLogCreate
 from app.services.gmail_service import GmailService
-from app.services.google_drive_service import GoogleDriveService
 from app.services.google_sheets_service import GoogleSheetsService
 from app.services.pdf_service import PdfService
 from app.services.svg_service import SvgService
@@ -27,7 +26,6 @@ class GenerationLogService:
 		svg_service: SvgService,
 		pdf_service: PdfService,
 		sheets_service: GoogleSheetsService,
-		drive_service: GoogleDriveService,
 		gmail_service: GmailService,
 		db: AsyncSession,
 	) -> None:
@@ -37,7 +35,6 @@ class GenerationLogService:
 		self._svg = svg_service
 		self._pdf = pdf_service
 		self._sheets = sheets_service
-		self._drive = drive_service
 		self._gmail = gmail_service
 		self._db = db
 
@@ -77,6 +74,7 @@ class GenerationLogService:
 			self._process_batch,
 			log_id=log.id,
 			template=template,
+			column_mapping=payload.column_mapping,
 		)
 		return log
 
@@ -84,6 +82,7 @@ class GenerationLogService:
 		self,
 		log_id: uuid.UUID,
 		template: Templates,
+		column_mapping: dict[str, str] | None = None,
 	) -> None:
 		try:
 			await self._log_repo.update_status(log_id, "PROCESSING")
@@ -93,7 +92,10 @@ class GenerationLogService:
 			if log is None:
 				raise NotFoundException("Generation Log không tồn tại.")
 
-			participants = self._sheets.read_participants(log.google_sheet_url)
+			participants = self._sheets.read_participants(
+				log.google_sheet_url,
+				column_mapping=column_mapping,
+			)
 
 			await self._log_repo.update_status(
 				log_id,
@@ -104,10 +106,26 @@ class GenerationLogService:
 			await self._db.commit()
 
 			for participant in participants:
+				# Resolve participant_name / participant_email from data.
+				# column_mapping keys = SVG variable names, so "name" might be the key.
+				# Also support explicit "participant_name" / "participant_email" keys.
+				p_name = (
+					participant.get("participant_name")
+					or participant.get("name")
+					or participant.get("name")
+					or ""
+				)
+				p_email = (
+					participant.get("participant_email")
+					or participant.get("email")
+					or participant.get("Email")
+					or ""
+				)
+
 				asset = GeneratedAssets(
 					generation_log_id=log_id,
-					participant_name=participant.get("participant_name", ""),
-					participant_email=participant.get("participant_email", ""),
+					participant_name=p_name,
+					participant_email=p_email,
 					email_status="PENDING",
 				)
 				asset = await self._asset_repo.create(asset)
@@ -117,17 +135,11 @@ class GenerationLogService:
 					svg_rendered = self._svg.render(template.svg_content, participant)
 					pdf_bytes = self._pdf.convert(svg_rendered)
 
-					participant_name = participant.get("participant_name", "")
-					filename = f"{participant_name or asset.id}.pdf"
-					drive_file_id = self._drive.upload_pdf(
-						pdf_bytes=pdf_bytes,
-						filename=filename,
-						folder_id=log.drive_folder_id,
-					)
+					filename = f"{p_name or asset.id}.pdf"
 
 					self._gmail.send_certificate(
-						to_email=participant.get("participant_email", ""),
-						participant_name=participant_name,
+						to_email=p_email,
+						participant_name=p_name,
 						event_name=template.name,
 						pdf_bytes=pdf_bytes,
 						filename=filename,
@@ -136,7 +148,6 @@ class GenerationLogService:
 					await self._asset_repo.update_status(
 						asset.id,
 						"SENT",
-						drive_file_id=drive_file_id,
 					)
 					await self._db.commit()
 				except Exception:

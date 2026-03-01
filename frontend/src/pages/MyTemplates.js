@@ -109,7 +109,16 @@ const MyTemplates = () => {
       const res = await TemplatesAPI.getAll();
       const mappedTemplates = res.data.map(t => {
         let parsedElements = [];
-        try { parsedElements = JSON.parse(t.svg_content || '[]'); } catch (e) { }
+        try {
+          let jsonStr = t.svg_content || '[]';
+          const match = jsonStr.match(/<desc id="konva_state">([\s\S]*?)<\/desc>/);
+          if (match && match[1]) {
+            jsonStr = match[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+          }
+          try {
+            parsedElements = JSON.parse(jsonStr);
+          } catch (e) { console.warn("skipping parse on template elements: ", t.name); }
+        } catch (e) { console.error("Could not parse template elements", e); }
         return {
           id: t.id,
           title: t.name,
@@ -139,11 +148,14 @@ const MyTemplates = () => {
       if (!eventId) throw new Error("Could not find or create a default Event");
 
       for (const tpl of defaultTemplates) {
+        let svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">`;
+        svgStr += `\n<desc id="konva_state">${JSON.stringify(tpl.elements).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')}</desc>\n`;
+        svgStr += `</svg>`;
         await TemplatesAPI.create({
           event_id: eventId,
           name: tpl.title,
           variables: tpl.variables,
-          svg_content: JSON.stringify(tpl.elements)
+          svg_content: svgStr
         });
       }
       await fetchTemplates();

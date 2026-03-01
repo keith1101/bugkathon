@@ -175,7 +175,12 @@ const CreatePage = () => {
                     if (t) {
                         setDesignName(t.name);
                         try {
-                            const parsedEls = JSON.parse(t.svg_content || '[]');
+                            let jsonStr = t.svg_content || '[]';
+                            const match = jsonStr.match(/<desc id="konva_state">([\s\S]*?)<\/desc>/);
+                            if (match && match[1]) {
+                                jsonStr = match[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+                            }
+                            const parsedEls = JSON.parse(jsonStr);
                             if (parsedEls && parsedEls.length > 0) setElements(parsedEls);
                         } catch (e) { console.error("Could not parse elements"); }
                         if (t.variables) {
@@ -198,7 +203,7 @@ const CreatePage = () => {
                 await TemplatesAPI.update(templateId, {
                     name: designName,
                     variables: templateVars,
-                    svg_content: JSON.stringify(elements)
+                    svg_content: getSvgString()
                 });
                 alert('Template updated successfully!');
             } else {
@@ -208,7 +213,7 @@ const CreatePage = () => {
                     event_id: eventId,
                     name: designName,
                     variables: templateVars,
-                    svg_content: JSON.stringify(elements)
+                    svg_content: getSvgString()
                 });
                 alert('Template saved successfully!');
                 navigate(`/create?id=${res.data.id}`, { replace: true });
@@ -406,20 +411,9 @@ const CreatePage = () => {
             .replace(/'/g, '&apos;');
     };
 
-    const downloadImage = (format) => {
-        const fileName = `${designName.replace(/\s+/g, '-').toLowerCase() || 'design'}.${format}`;
-        if (format === 'png') {
-            const old = selectedId; selectShape(null);
-            setTimeout(() => {
-                const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
-                const link = document.createElement('a');
-                link.download = fileName; link.href = uri;
-                document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                selectShape(old); setIsExportMenuOpen(false);
-            }, 100);
-            return;
-        }
+    const getSvgString = () => {
         let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${stageWidth}" height="${stageHeight}" viewBox="0 0 ${stageWidth} ${stageHeight}">`;
+        svg += `\n<desc id="konva_state">${escapeSvgText(JSON.stringify(elements))}</desc>\n`;
         svg += `<rect x="0" y="0" width="${stageWidth}" height="${stageHeight}" fill="#ffffff" />`;
         elements.forEach(el => {
             const isFilled = el.filled !== false;
@@ -433,7 +427,14 @@ const CreatePage = () => {
             else if (el.type === 'text') {
                 const anchor = el.align === 'center' ? 'middle' : el.align === 'right' ? 'end' : 'start';
                 let sx = el.x; if (el.align === 'center') sx += (el.width / 2); if (el.align === 'right') sx += el.width;
-                svg += `<text x="${sx}" y="${el.y + el.fontSize * 0.8}" font-family="${el.fontFamily || 'sans-serif'}" font-size="${el.fontSize}px" fill="${el.fill}" text-anchor="${anchor}">${escapeSvgText(el.text)}</text>`;
+
+                let idAttr = '';
+                const varMatch = el.text.match(/^{{(.*?)}}$/);
+                if (varMatch) {
+                    idAttr = ` id="${varMatch[1]}"`;
+                }
+
+                svg += `<text${idAttr} x="${sx}" y="${el.y + el.fontSize * 0.8}" font-family="${el.fontFamily || 'sans-serif'}" font-size="${el.fontSize}px" fill="${el.fill}" text-anchor="${anchor}">${escapeSvgText(el.text)}</text>`;
             } else if (el.type === 'circle') svg += `<circle cx="${el.x}" cy="${el.y}" r="${el.radius}" ${attrs} />`;
             else if (el.type === 'triangle' || el.type === 'pentagon' || el.type === 'hexagon') {
                 const sides = el.type === 'triangle' ? 3 : el.type === 'pentagon' ? 5 : 6;
@@ -461,6 +462,24 @@ const CreatePage = () => {
             }
         });
         svg += `</svg>`;
+        return svg;
+    };
+
+    const downloadImage = (format) => {
+        const fileName = `${designName.replace(/\s+/g, '-').toLowerCase() || 'design'}.${format}`;
+        if (format === 'png') {
+            const old = selectedId; selectShape(null);
+            setTimeout(() => {
+                const uri = stageRef.current.toDataURL({ pixelRatio: 2 });
+                const link = document.createElement('a');
+                link.download = fileName; link.href = uri;
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                selectShape(old); setIsExportMenuOpen(false);
+            }, 100);
+            return;
+        }
+
+        const svg = getSvgString();
         const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a'); link.download = fileName; link.href = url;

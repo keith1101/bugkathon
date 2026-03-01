@@ -6,4 +6,5 @@ credentials/service_account.json
 *.pyc
 .pytest_cache/
 credentials/token.json
+credentials/gmail_token.json
 credentials/client_secret.json

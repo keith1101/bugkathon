@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET_FILE: str = Field(default="credentials/client_secret.json")
     GOOGLE_TOKEN_FILE: str = Field(default="credentials/token.json")
 
+    # ── Google OAuth 2.0 (Gmail) ──────────────────────────────
+    GOOGLE_GMAIL_TOKEN_FILE: str = Field(default="credentials/gmail_token.json")
+
     # ── JWT Authentication ─────────────────────────────────────
     JWT_SECRET_KEY: str = Field(...)          # openssl rand -hex 32
     JWT_ALGORITHM: str = Field(default="HS256")

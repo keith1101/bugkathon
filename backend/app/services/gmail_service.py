@@ -4,23 +4,22 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 from app.core.config import settings
 from app.core.exceptions import BadRequestException
-from app.models.generated_asset import GeneratedAssets
+from app.core.google_oauth import get_gmail_credentials
 
-SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
 
 class GmailService:
     def __init__(self) -> None:
-        credentials = service_account.Credentials.from_service_account_file(
-            settings.GOOGLE_SERVICE_ACCOUNT_FILE,
-            scopes=SCOPES,
-        )
-        delegated = credentials.with_subject(settings.GMAIL_SENDER_EMAIL)
-        self._service = build("gmail", "v1", credentials=delegated)
+        creds = get_gmail_credentials()
+        if creds is None:
+            raise BadRequestException(
+                "Gmail chưa được authorize. "
+                "Truy cập GET /api/v1/oauth/gmail/authorize để authorize."
+            )
+        self._service = build("gmail", "v1", credentials=creds)
 
     def send_certificate(
         self,
@@ -30,7 +29,11 @@ class GmailService:
         pdf_bytes: bytes,
         filename: str,
     ) -> None:
-        msg = MIMEMultipart()
+        # Đảm bảo filename có extension .pdf
+        if not filename.lower().endswith(".pdf"):
+            filename = filename + ".pdf"
+
+        msg = MIMEMultipart("mixed")
         msg["To"] = to_email
         msg["From"] = settings.GMAIL_SENDER_EMAIL
         msg["Subject"] = f"[GDGoC] Chứng nhận tham dự — {event_name}"
@@ -46,13 +49,15 @@ class GmailService:
         )
         msg.attach(body)
 
-        attachment = MIMEBase("application", "octet-stream")
+        attachment = MIMEBase("application", "pdf")
         attachment.set_payload(pdf_bytes)
         encoders.encode_base64(attachment)
         attachment.add_header(
             "Content-Disposition",
-            f'attachment; filename="{filename}"',
+            "attachment",
+            filename=filename,
         )
+        attachment.add_header("Content-Type", "application/pdf", name=filename)
         msg.attach(attachment)
 
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()

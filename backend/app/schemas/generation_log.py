@@ -9,6 +9,7 @@ class GenerationLogCreate(BaseModel):
 	template_id: uuid.UUID
 	google_sheet_url: str
 	drive_folder_id: str | None = None
+	column_mapping: dict[str, str] | None = None
 
 	@field_validator("google_sheet_url")
 	@classmethod

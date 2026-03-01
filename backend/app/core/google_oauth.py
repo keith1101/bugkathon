@@ -54,3 +54,57 @@ def is_drive_authorized() -> bool:
     Check if Drive has been authorized (token.json exists and valid).
     """
     return get_drive_credentials() is not None
+
+
+# ── Gmail OAuth 2.0 ──────────────────────────────────────────
+
+GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+
+
+def get_gmail_oauth_flow(redirect_uri: str) -> Flow:
+    """
+    Create OAuth Flow for Gmail from client_secret.json.
+    redirect_uri must match the URI registered in Google Cloud Console.
+    """
+    flow = Flow.from_client_secrets_file(
+        settings.GOOGLE_CLIENT_SECRET_FILE,
+        scopes=GMAIL_SCOPES,
+        redirect_uri=redirect_uri,
+    )
+    return flow
+
+
+def get_gmail_credentials() -> Credentials | None:
+    """
+    Load Gmail credentials from gmail_token.json.
+    Auto-refresh if expired using refresh_token.
+    Return None if gmail_token.json does not exist or credentials are invalid.
+    """
+    if not os.path.exists(settings.GOOGLE_GMAIL_TOKEN_FILE):
+        return None
+
+    creds = Credentials.from_authorized_user_file(
+        settings.GOOGLE_GMAIL_TOKEN_FILE, GMAIL_SCOPES
+    )
+
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+        save_gmail_credentials(creds)
+
+    return creds if (creds and creds.valid) else None
+
+
+def save_gmail_credentials(creds: Credentials) -> None:
+    """
+    Save Gmail credentials to gmail_token.json after user authorizes.
+    """
+    os.makedirs(os.path.dirname(settings.GOOGLE_GMAIL_TOKEN_FILE), exist_ok=True)
+    with open(settings.GOOGLE_GMAIL_TOKEN_FILE, "w") as f:
+        f.write(creds.to_json())
+
+
+def is_gmail_authorized() -> bool:
+    """
+    Check if Gmail has been authorized (gmail_token.json exists and valid).
+    """
+    return get_gmail_credentials() is not None

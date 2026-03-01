@@ -17,13 +17,29 @@ cd backend
 cp .env.example .env  # Configure your environment variables here
 docker-compose up --build
 ```
-> API Documentation will be available at [http://localhost:8000/docs](http://localhost:8000/docs)
+> API documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ### 2. Frontend (React UI)
-The frontend is a standard Node.js project. You can run it concurrently with the backend.
+The frontend runs as a standard Node.js project and connects to backend APIs.
 ```bash
 cd frontend
 npm install
 npm start
 ```
-> The web interface will be available at [http://localhost:3000](http://localhost:3000)
+> Web app: [http://localhost:3000](http://localhost:3000)
+
+## ⚙️ Environment Notes
+
+- Frontend API base URL is controlled by `REACT_APP_API_BASE_URL` (default: `http://localhost:8000`).
+- Authentication is cookie-based (HttpOnly cookies) with automatic refresh handling in the frontend API client.
+
+## 🔐 Authentication Flow (High-level)
+
+- `POST /api/v1/auth/login` sets session cookies.
+- Protected pages verify session via `GET /api/v1/auth/me`.
+- On `401`, frontend triggers `POST /api/v1/auth/refresh` and retries once.
+
+For module-specific details, see:
+
+- [backend/README.md](backend/README.md)
+- [frontend/README.md](frontend/README.md)

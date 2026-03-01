@@ -60,7 +60,16 @@ const GeneratorPage = () => {
                 const res = await TemplatesAPI.getAll();
                 const mappedTemplates = res.data.map(t => {
                     let parsedElements = [];
-                    try { parsedElements = JSON.parse(t.svg_content || '[]'); } catch (e) { }
+                    try {
+                        let jsonStr = t.svg_content || '[]';
+                        const match = jsonStr.match(/<desc id="konva_state">([\s\S]*?)<\/desc>/);
+                        if (match && match[1]) {
+                            jsonStr = match[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+                        }
+                        try {
+                            parsedElements = JSON.parse(jsonStr);
+                        } catch (e) { console.warn("skipping parse on template elements: ", t.name); }
+                    } catch (e) { console.error("Could not parse template elements", e); }
                     return {
                         id: t.id,
                         title: t.name,
