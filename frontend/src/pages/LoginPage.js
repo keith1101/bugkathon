@@ -46,6 +46,7 @@ function LoginPage() {
                 <h2 className="login-title">Login</h2>
 
                 {/* Google Sign In Button */}
+                {/* Google Sign In Button - Disabled per request
                 <button className="google-auth-btn" onClick={handleGoogleSignIn} disabled={isGoogleLoading}>
                     {isGoogleLoading ? (
                         <span className="spinner-small"></span>
@@ -65,6 +66,7 @@ function LoginPage() {
                 <div className="auth-divider">
                     <span>or sign in with email</span>
                 </div>
+                */}
 
                 <form className="login-form" onSubmit={handleSubmit}>
                     <div className="form-group">

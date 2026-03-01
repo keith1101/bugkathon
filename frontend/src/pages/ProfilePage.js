@@ -221,9 +221,11 @@ const ProfilePage = () => {
                                 Sign Out
                             </button>
                             <div style={{ display: 'flex', gap: '12px' }}>
+                                {/* Disabled per request
                                 <button type="button" className="btn-delete-account" onClick={handleDeleteAccount}>
                                     Delete Account
                                 </button>
+                                */}
                                 <button type="submit" className="btn-save-profile">
                                     Save Changes
                                 </button>
