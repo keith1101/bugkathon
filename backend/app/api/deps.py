@@ -41,6 +41,7 @@ from app.services.generation_log_service import GenerationLogService
 from app.services.svg_service import SvgService
 from app.services.pdf_service import PdfService
 from app.services.google_sheets_service import GoogleSheetsService
+from app.services.google_drive_service import GoogleDriveService
 from app.services.gmail_service import GmailService
 from app.services.generated_asset_service import GeneratedAssetService
 
@@ -117,6 +118,10 @@ def get_google_sheets_service() -> GoogleSheetsService:
     return GoogleSheetsService()
 
 
+def get_google_drive_service() -> GoogleDriveService:
+    return GoogleDriveService()
+
+
 def get_gmail_service() -> GmailService:
     return GmailService()
 
@@ -171,6 +176,7 @@ def get_generation_log_service(
     svg_service: SvgService = Depends(get_svg_service),
     pdf_service: PdfService = Depends(get_pdf_service),
     sheets_service: GoogleSheetsService = Depends(get_google_sheets_service),
+    drive_service: GoogleDriveService = Depends(get_google_drive_service),
     gmail_service: GmailService = Depends(get_gmail_service),
 ) -> GenerationLogService:
     return GenerationLogService(
@@ -180,6 +186,7 @@ def get_generation_log_service(
         svg_service=svg_service,
         pdf_service=pdf_service,
         sheets_service=sheets_service,
+        drive_service=drive_service,
         gmail_service=gmail_service,
         db=db,
     )

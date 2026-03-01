@@ -10,6 +10,7 @@ import { Stage, Layer, Rect, Text, Transformer, Circle, RegularPolygon, Star, Li
 import useImage from 'use-image';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, DEFAULT_TEMPLATE_VARIABLES } from '../constants';
 import { TemplatesAPI, GenerationAPI } from '../config/api';
+import { parseSvgToElements } from '../utils/parseSvgToElements';
 import './GeneratorPage.css';
 
 const TEMPLATE_VARIABLES = DEFAULT_TEMPLATE_VARIABLES;
@@ -68,7 +69,15 @@ const GeneratorPage = () => {
                         }
                         try {
                             parsedElements = JSON.parse(jsonStr);
-                        } catch (e) { console.warn("skipping parse on template elements: ", t.name); }
+                        } catch (e) {
+                            // Fallback: parse raw SVG elements directly
+                            parsedElements = parseSvgToElements(t.svg_content);
+                            if (parsedElements.length > 0) {
+                                console.info(`Parsed ${parsedElements.length} elements from raw SVG for: ${t.name}`);
+                            } else {
+                                console.warn("Could not parse template elements: ", t.name);
+                            }
+                        }
                     } catch (e) { console.error("Could not parse template elements", e); }
                     return {
                         id: t.id,
@@ -218,8 +227,12 @@ const GeneratorPage = () => {
         try {
             const res = await GenerationAPI.generate({
                 template_id: selectedTemplate.id,
-                google_sheet_url: sheetsUrl
-                // drive_folder_id: execOptions.drive ? "some_id" : null
+                google_sheet_url: sheetsUrl,
+                column_mapping: mappings,
+                create_pdf: execOptions.pdf,
+                save_to_drive: execOptions.drive,
+                send_email: execOptions.email,
+                email_column: emailColumn || null
             });
 
             const logId = res.data.id;

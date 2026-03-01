@@ -28,7 +28,7 @@ def get_drive_credentials() -> Credentials | None:
     Auto-refresh if expired using refresh_token.
     Return None if token.json does not exist or credentials are invalid.
     """
-    if not os.path.exists(settings.GOOGLE_TOKEN_FILE):
+    if not os.path.exists(settings.GOOGLE_TOKEN_FILE) or os.path.getsize(settings.GOOGLE_TOKEN_FILE) == 0:
         return None
 
     creds = Credentials.from_authorized_user_file(settings.GOOGLE_TOKEN_FILE, DRIVE_SCOPES)
@@ -80,7 +80,7 @@ def get_gmail_credentials() -> Credentials | None:
     Auto-refresh if expired using refresh_token.
     Return None if gmail_token.json does not exist or credentials are invalid.
     """
-    if not os.path.exists(settings.GOOGLE_GMAIL_TOKEN_FILE):
+    if not os.path.exists(settings.GOOGLE_GMAIL_TOKEN_FILE) or os.path.getsize(settings.GOOGLE_GMAIL_TOKEN_FILE) == 0:
         return None
 
     creds = Credentials.from_authorized_user_file(

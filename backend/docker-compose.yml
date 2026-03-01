@@ -8,6 +8,7 @@ services:
     volumes:
       - ./credentials:/app/credentials
       - ./.env:/app/.env
+      - ./generated:/app/generated
     env_file:
       - .env
     extra_hosts:

@@ -10,6 +10,12 @@ class GenerationLogCreate(BaseModel):
 	google_sheet_url: str
 	drive_folder_id: str | None = None
 	column_mapping: dict[str, str] | None = None
+	
+	# Execution Options
+	create_pdf: bool = True
+	save_to_drive: bool = False
+	send_email: bool = False
+	email_column: str | None = None
 
 	@field_validator("google_sheet_url")
 	@classmethod

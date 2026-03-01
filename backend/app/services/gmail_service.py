@@ -13,13 +13,16 @@ from app.core.google_oauth import get_gmail_credentials
 
 class GmailService:
     def __init__(self) -> None:
-        creds = get_gmail_credentials()
-        if creds is None:
-            raise BadRequestException(
-                "Gmail chưa được authorize. "
-                "Truy cập GET /api/v1/oauth/gmail/authorize để authorize."
-            )
-        self._service = build("gmail", "v1", credentials=creds)
+        try:
+            creds = get_gmail_credentials()
+            if creds:
+                self._service = build("gmail", "v1", credentials=creds)
+            else:
+                self._service = None
+                print("Warning: Gmail service not authorized. Email features will be disabled.")
+        except Exception as e:
+            self._service = None
+            print(f"Warning: Failed to initialize Gmail service: {e}")
 
     def send_certificate(
         self,
@@ -59,6 +62,12 @@ class GmailService:
         )
         attachment.add_header("Content-Type", "application/pdf", name=filename)
         msg.attach(attachment)
+
+        if not self._service:
+            raise BadRequestException(
+                "Gmail chưa được authorize. "
+                "Truy cập GET /api/v1/oauth/gmail/authorize để authorize."
+            )
 
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
         try:
