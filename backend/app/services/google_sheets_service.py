@@ -91,6 +91,11 @@ class GoogleSheetsService:
 			participants: list[dict[str, str]] = []
 			for row in rows[1:]:
 				entry: dict[str, str] = {}
+				# 1. Store all raw columns so nothing is lost (e.g., Email addresses not printed on certificate)
+				for col_idx, raw_header in enumerate(raw_headers):
+					entry[raw_header] = row[col_idx].strip() if col_idx < len(row) else ""
+				
+				# 2. Store specific mapped variables required for SVG replacement
 				for var_name, col_idx in index_map.items():
 					entry[var_name] = row[col_idx].strip() if col_idx < len(row) else ""
 				participants.append(entry)

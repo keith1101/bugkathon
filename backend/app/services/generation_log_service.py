@@ -139,6 +139,8 @@ class GenerationLogService:
 						or ""
 					)
 
+				print(f"Debug: p_name={p_name}, p_email={p_email}, send_email={send_email}, email_column={email_column}, pdf_bytes={'Yes' if create_pdf else 'No'}")
+
 				asset = GeneratedAssets(
 					generation_log_id=log_id,
 					participant_name=p_name,
