@@ -3,6 +3,7 @@ import './MyTemplates.css';
 import { useNavigate } from 'react-router-dom';
 import ProfileIcon from '../components/ProfileIcon';
 import { TemplatesAPI, EventsAPI } from '../config/api';
+import { parseSvgToElements } from '../utils/parseSvgToElements';
 
 // Default template data for display (Fallback)
 const defaultTemplates = [
@@ -117,7 +118,15 @@ const MyTemplates = () => {
           }
           try {
             parsedElements = JSON.parse(jsonStr);
-          } catch (e) { console.warn("skipping parse on template elements: ", t.name); }
+          } catch (e) {
+            // Fallback: parse raw SVG elements directly
+            parsedElements = parseSvgToElements(t.svg_content);
+            if (parsedElements.length > 0) {
+              console.info(`Parsed ${parsedElements.length} elements from raw SVG for: ${t.name}`);
+            } else {
+              console.warn("Could not parse template elements: ", t.name);
+            }
+          }
         } catch (e) { console.error("Could not parse template elements", e); }
         return {
           id: t.id,

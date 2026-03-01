@@ -13,6 +13,7 @@ from app.repositories.template_repository import TemplateRepository
 from app.schemas.generation_log import GenerationLogCreate
 from app.services.gmail_service import GmailService
 from app.services.google_sheets_service import GoogleSheetsService
+from app.services.google_drive_service import GoogleDriveService
 from app.services.pdf_service import PdfService
 from app.services.svg_service import SvgService
 
@@ -26,6 +27,7 @@ class GenerationLogService:
 		svg_service: SvgService,
 		pdf_service: PdfService,
 		sheets_service: GoogleSheetsService,
+		drive_service: GoogleDriveService,
 		gmail_service: GmailService,
 		db: AsyncSession,
 	) -> None:
@@ -35,6 +37,7 @@ class GenerationLogService:
 		self._svg = svg_service
 		self._pdf = pdf_service
 		self._sheets = sheets_service
+		self._drive = drive_service
 		self._gmail = gmail_service
 		self._db = db
 
@@ -75,6 +78,10 @@ class GenerationLogService:
 			log_id=log.id,
 			template=template,
 			column_mapping=payload.column_mapping,
+            create_pdf=payload.create_pdf,
+            save_to_drive=payload.save_to_drive,
+            send_email=payload.send_email,
+            email_column=payload.email_column,
 		)
 		return log
 
@@ -83,6 +90,10 @@ class GenerationLogService:
 		log_id: uuid.UUID,
 		template: Templates,
 		column_mapping: dict[str, str] | None = None,
+        create_pdf: bool = True,
+        save_to_drive: bool = False,
+        send_email: bool = False,
+        email_column: str | None = None,
 	) -> None:
 		try:
 			await self._log_repo.update_status(log_id, "PROCESSING")
@@ -115,12 +126,20 @@ class GenerationLogService:
 					or participant.get("name")
 					or ""
 				)
-				p_email = (
-					participant.get("participant_email")
-					or participant.get("email")
-					or participant.get("Email")
-					or ""
-				)
+				# If the user selected an explicit email column on the frontend UI, use it.
+				# Otherwise default to "participant_email" / "email"
+				p_email = ""
+				if email_column and email_column in participant:
+					p_email = participant.get(email_column, "")
+				else:
+					p_email = (
+						participant.get("participant_email")
+						or participant.get("email")
+						or participant.get("Email")
+						or ""
+					)
+
+				print(f"Debug: p_name={p_name}, p_email={p_email}, send_email={send_email}, email_column={email_column}, pdf_bytes={'Yes' if create_pdf else 'No'}")
 
 				asset = GeneratedAssets(
 					generation_log_id=log_id,
@@ -133,24 +152,45 @@ class GenerationLogService:
 
 				try:
 					svg_rendered = self._svg.render(template.svg_content, participant)
-					pdf_bytes = self._pdf.convert(svg_rendered)
-
+					pdf_bytes = None
 					filename = f"{p_name or asset.id}.pdf"
 
-					self._gmail.send_certificate(
-						to_email=p_email,
-						participant_name=p_name,
-						event_name=template.name,
-						pdf_bytes=pdf_bytes,
-						filename=filename,
-					)
+					if create_pdf:
+						pdf_bytes = self._pdf.convert(svg_rendered)
+						# Always save a local copy for "DONE" status to be meaningful
+						self._drive._save_locally(pdf_bytes, filename)
+
+					drive_file_id = None
+
+					if save_to_drive and pdf_bytes:
+						drive_file_id = self._drive.upload_pdf(
+							pdf_bytes=pdf_bytes,
+							filename=filename,
+							folder_id=log.drive_folder_id,
+						)
+
+					email_sent = False
+					if send_email and pdf_bytes and p_email:
+						try:
+							self._gmail.send_certificate(
+								to_email=p_email,
+								participant_name=p_name,
+								event_name=template.name,
+								pdf_bytes=pdf_bytes,
+								filename=filename,
+							)
+							email_sent = True
+						except Exception as e:
+							print(f"Skipping email for {p_email} as Gmail is not authorized or failed: {e}")
 
 					await self._asset_repo.update_status(
 						asset.id,
-						"SENT",
+						"SENT" if email_sent else "DONE",
+						drive_file_id=drive_file_id,
 					)
 					await self._db.commit()
-				except Exception:
+				except Exception as e:
+					print(f"Error processing participant {p_name}: {e}")
 					await self._asset_repo.update_status(asset.id, "FAILED")
 					await self._db.commit()
 				finally:
@@ -159,6 +199,7 @@ class GenerationLogService:
 
 			await self._log_repo.update_status(log_id, "COMPLETED")
 			await self._db.commit()
-		except Exception:
+		except Exception as e:
+			print(f"Critical error in batch processing for log {log_id}: {e}")
 			await self._log_repo.update_status(log_id, "FAILED")
 			await self._db.commit()
